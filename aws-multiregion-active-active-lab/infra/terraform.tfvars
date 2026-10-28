@@ -1,0 +1,12 @@
+project_name                  = "active-active-lab"
+primary_region                = "ap-south-1"
+secondary_region              = "ap-southeast-1"
+instance_type                 = "t3.micro"
+dynamodb_table_name           = "active-active-lab-events"
+enable_route53                = false
+route53_zone_id               = ""
+app_domain                    = ""
+mumbai_vpc_cidr               = "10.10.0.0/16"
+singapore_vpc_cidr            = "10.20.0.0/16"
+mumbai_public_subnet_cidrs    = ["10.10.1.0/24", "10.10.2.0/24"]
+singapore_public_subnet_cidrs = ["10.20.1.0/24", "10.20.2.0/24"]

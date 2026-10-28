@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AWS Multi-Region Active-Active Lab</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; margin: 3rem auto; max-width: 46rem; padding: 0 1rem; }
+      input, button { font: inherit; padding: .5rem; }
+      input { width: min(28rem, 70%); }
+      li { margin: .5rem 0; }
+      #status { min-height: 1.5em; }
+    </style>
+  </head>
+  <body>
+    <h1>Multi-Region Active-Active Lab</h1>
+    <p>This page writes events to the regional DynamoDB replica.</p>
+    <form id="event-form">
+      <label for="message">Event message</label>
+      <input id="message" name="message" maxlength="200" required>
+      <button type="submit">Write event</button>
+    </form>
+    <p id="status" role="status"></p>
+    <h2>Recent events</h2>
+    <button id="refresh" type="button">Refresh</button>
+    <ul id="events"></ul>
+    <script>
+      const status = document.querySelector("#status");
+      const list = document.querySelector("#events");
+
+      async function refreshEvents() {
+        const response = await fetch("/api/events");
+        if (!response.ok) throw new Error(`Request failed: ${response.status}`);
+        const data = await response.json();
+        list.replaceChildren();
+        for (const event of data.events) {
+          const item = document.createElement("li");
+          item.textContent = `${event.created_at} — ${event.region}: ${event.message}`;
+          list.append(item);
+        }
+        status.textContent = `Served by ${data.region}. Global table reads may lag across regions.`;
+      }
+
+      document.querySelector("#event-form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        status.textContent = "Writing event…";
+        try {
+          const response = await fetch("/api/events", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: document.querySelector("#message").value })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Write failed");
+          document.querySelector("#message").value = "";
+          await refreshEvents();
+        } catch (error) {
+          status.textContent = error.message;
+        }
+      });
+
+      document.querySelector("#refresh").addEventListener("click", () => {
+        refreshEvents().catch((error) => { status.textContent = error.message; });
+      });
+      refreshEvents().catch((error) => { status.textContent = error.message; });
+    </script>
+  </body>
+</html>
